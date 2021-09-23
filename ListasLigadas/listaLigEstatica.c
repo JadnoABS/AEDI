@@ -18,7 +18,7 @@ void exibirLista(LISTA* lista) {
   int i = lista->inicio;
 
   printf("------\n");
-  while(i > -1){
+  while(i >= 0){
     printf("| ");
     printf("%2.d", lista->A[i].chave);
     printf(" |\n");
@@ -87,7 +87,7 @@ TIPOCHAVE buscaSeqOrd(LISTA* lista, TIPOCHAVE ch) {
 
 void insercaoOrd(REGISTRO reg, LISTA* lista) {
   int indiceReg = lista->proxDisponivel;
-  if(lista->inicio == -1){
+  if(lista->inicio < 0){
     lista->inicio = indiceReg;
     lista->proxDisponivel = lista->A[indiceReg].prox;
     lista->A[indiceReg].chave = reg.chave;
@@ -110,7 +110,7 @@ void insercaoOrd(REGISTRO reg, LISTA* lista) {
   lista->A[indiceReg].chave = reg.chave;
   lista->A[indiceReg].prox = iSucessor;
 
-  if(iAntecessor > -1){
+  if(iAntecessor >= 0){
     lista->A[iAntecessor].prox = indiceReg;
   } else lista->inicio = indiceReg;
 
