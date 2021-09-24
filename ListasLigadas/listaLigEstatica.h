@@ -33,7 +33,7 @@ TIPOCHAVE nesimoElemento(LISTA* lista, int n);
 
 void destruirLista(LISTA* lista);
 
-TIPOCHAVE buscaSeqOrd(LISTA* lista, TIPOCHAVE ch);
+TIPOCHAVE buscaSeqOrd(LISTA* lista, TIPOCHAVE ch, int* ant);
 
 void insercaoOrd(REGISTRO reg, LISTA* lista);
 

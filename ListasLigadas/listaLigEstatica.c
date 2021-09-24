@@ -72,38 +72,24 @@ void destruirLista(LISTA* lista) {
 }
 
 
-TIPOCHAVE buscaSeqOrd(LISTA* lista, TIPOCHAVE ch) {
+TIPOCHAVE buscaSeqOrd(LISTA* lista, TIPOCHAVE ch, int* ant) {
   int i = lista->inicio;
-
+  *ant = -1;
   while(lista->A[i].chave < ch && i > -1){
+    *ant = i;
     if(lista->A[i].prox > -1){
       i = lista->A[i].prox;
     } else return -1;
   }
 
-  if(lista->A[i].chave == ch) return i;
-  else return -1;
+  return i;
 }
 
 void insercaoOrd(REGISTRO reg, LISTA* lista) {
   int indiceReg = lista->proxDisponivel;
-  if(lista->inicio < 0){
-    lista->inicio = indiceReg;
-    lista->proxDisponivel = lista->A[indiceReg].prox;
-    lista->A[indiceReg].chave = reg.chave;
-    lista->A[indiceReg].prox = -1;
-    return;
-  }
 
-  int iSucessor = lista->inicio;
-  int iAntecessor = -1;
-  while(lista->A[iSucessor].chave < reg.chave){
-    iAntecessor = iSucessor;
-    iSucessor = lista->A[iSucessor].prox;
-    if(iSucessor < 0){
-      break;
-    }
-  }
+  int iAntecessor;
+  int iSucessor = buscaSeqOrd(lista, reg.chave, &iAntecessor);
 
   lista->proxDisponivel = lista->A[indiceReg].prox;
 
