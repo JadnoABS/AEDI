@@ -1,4 +1,3 @@
-
 begin: main
 
 main: main.o listaLigEstatica.o
@@ -9,4 +8,3 @@ main.o: main.c listaLigEstatica.h
 
 listaLigEstatica.o: listaLigEstatica.c listaLigEstatica.h
 	gcc -c listaLigEstatica.c
-

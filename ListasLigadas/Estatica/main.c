@@ -15,5 +15,6 @@ int main() {
   printf("Quinto Elemento: %d\n", nesimoElemento(&lista, 5));
 
   destruirLista(&lista);
+
   return 0;
 }
