@@ -7,3 +7,7 @@ Collection of code I wrote during the AED I (Algorithms and Data Structures I) c
   * Dinamically Allocated
   * Circular
   * Doubly Linked
+
+* Queue
+
+* Stack
