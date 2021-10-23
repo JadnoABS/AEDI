@@ -275,8 +275,18 @@ void imprimirPolinomioFormatado(POLINOMIO* pol) {
   TERMO* termo = pol->cabeca->prox;
 
   while(termo != pol->cabeca){
+    if(termo->coeficiente != 0) {
+      char sinal = termo->coeficiente > 0 ? '+' : '-';
+
+      // Printa apenas sinal negativo no primeiro termo
+      // e printa qualquer um dos sinais nos outros termos
+      if(termo->ant != pol->cabeca || sinal == '-')
+        fprintf(saida, "%c", sinal);
+    }
+
+    // Booleanos para decidir se o coeficiente e a variavel precisarao ser printadas
     printVariavel = termo->expoente;
-    printCoeficiente = termo->coeficiente && (termo->coeficiente != 1 || !printVariavel);
+    printCoeficiente = termo->coeficiente && (termo->coeficiente > 1 || !printVariavel);
 
     if(printCoeficiente) fprintf(saida, "%.2lf", (double)abs(termo->coeficiente));
     if(printVariavel) {
@@ -285,10 +295,6 @@ void imprimirPolinomioFormatado(POLINOMIO* pol) {
     }
 
     termo = termo->prox;
-    if(termo->coeficiente != 0) {
-      char sinal = termo->coeficiente > 0 ? '+' : '-';
-      fprintf(saida, "%c", sinal);
-    }
   }
 
   fprintf(saida, "\n");
