@@ -6,17 +6,6 @@
 
 
 
-
-/*
- *  Duvidas sobre o EP
- *  - Quantas casas decimais de precisao no printf
- *  - Eh (0, true) e (1, false) mesmo?
- *  - A derivada do exemplo do PDF nao esta em ordem
- * */
-
-
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -36,7 +25,10 @@ typedef struct {
 } POLINOMIO;
 
 
-/*---------- Funcoes basicas de uma lista ligada ---------- */
+FILE* entrada;
+FILE* saida;
+
+/*---------- Funcoes basicas de uma lista duplamente ligada ---------- */
 
 
 void inicializarPolinomio(POLINOMIO* pol) {
@@ -58,6 +50,8 @@ int tamanhoDoPolinomio(POLINOMIO* polinomio) {
   return i;
 }
 
+
+// O polinomio tera sempre ordem decrescente de expoente
 TERMO* buscaSeqOrd(POLINOMIO* polinomio, int expoente, TERMO** ant) {
   polinomio->cabeca->expoente = expoente;
   TERMO* termo = polinomio->cabeca->prox;
@@ -91,10 +85,13 @@ bool inserirTermo(POLINOMIO* pol, double coeficiente, int expoente) {
   TERMO* termo = buscaSeqOrd(pol, expoente, &ant);
 
   if(termo) {
+    // Essa parte sera util para somar e subtrair dois polinomios
     termo->coeficiente += coeficiente;
     if(!termo->coeficiente) excluirTermo(pol, termo->expoente);
     return true;
   };
+
+  if(!coeficiente) return false;
 
   termo = (TERMO*) malloc(sizeof(TERMO));
 
@@ -116,6 +113,9 @@ POLINOMIO* somar(POLINOMIO* pol1, POLINOMIO* pol2) {
   POLINOMIO* resultado = (POLINOMIO*) malloc(sizeof(POLINOMIO));
   inicializarPolinomio(resultado);
 
+  // Ao inserir todos os termos dos dois polinomios
+  // a insercaoOrdenada soma automaticamente os termos
+  // de expoente igual
   TERMO* termo = pol1->cabeca->prox;
   while(termo != pol1->cabeca) {
     inserirTermo(resultado, termo->coeficiente, termo->expoente);
@@ -141,6 +141,8 @@ POLINOMIO* subtrair(POLINOMIO* pol1, POLINOMIO* pol2) {
   }
   termo = pol2->cabeca->prox;
   while(termo != pol2->cabeca) {
+    // Neste a diferenca é que iremos inserir os termos da segunda lista
+    // com o coeficiente negativo
     inserirTermo(resultado, -(termo->coeficiente), termo->expoente);
     termo = termo->prox;
   }
@@ -153,6 +155,7 @@ POLINOMIO* multiplicar(POLINOMIO* pol1, POLINOMIO* pol2) {
   inicializarPolinomio(resultado);
 
   TERMO* termo1 = pol1->cabeca->prox;
+  // Multiplica cada termo de pol1 por todos os de pol2
   while(termo1 != pol1->cabeca) {
     TERMO* termo2 = pol2->cabeca->prox;
 
@@ -173,6 +176,7 @@ POLINOMIO* derivar(POLINOMIO* pol) {
   inicializarPolinomio(resultado);
 
   TERMO* termo = pol->cabeca->prox;
+  // Deriva cada termo por vez e insere no resultado
   while(termo != pol->cabeca) {
     double coeficiente = termo->expoente * termo->coeficiente;
     int expoente = termo->expoente - 1;
@@ -191,11 +195,13 @@ int verificarRaiz(POLINOMIO* pol, int raiz) {
   double resultado = 0;
   TERMO* termo = pol->cabeca->prox;
 
+  // Calculo do polinomio com x = raiz
   while(termo != pol->cabeca) {
     resultado += termo->coeficiente * pow(raiz, termo->expoente);
     termo = termo->prox;
   }
 
+  // Caso o resultado nao zere, o numero nao é raiz
   if(resultado) return 1;
   return 0;
 }
@@ -205,12 +211,14 @@ double* calcularRaiz(POLINOMIO* pol) {
   double* resultado = (double*) malloc(sizeof(double) * 2);
   TERMO* termo = pol->cabeca->prox;
 
+  // Caso nao seja de grau 2
   if(termo->expoente != 2 || termo == pol->cabeca){
     resultado[0] = 99999;
     resultado[1] = -99999;
     return resultado;
   }
 
+  // Separacao dos coeficientes
   double a = 0; double b = 0; double c = 0;
   while(termo != pol->cabeca){
     if(termo->expoente == 2) a = termo->coeficiente;
@@ -220,6 +228,7 @@ double* calcularRaiz(POLINOMIO* pol) {
     termo = termo->prox;
   }
 
+  // Formula de bhaskara
   double delta = (b*b) - (4 * a * c);
   double raizDelta = sqrt(delta);
   if(raizDelta * raizDelta != delta){
@@ -233,7 +242,10 @@ double* calcularRaiz(POLINOMIO* pol) {
   return resultado;
 }
 
+
 int grauDoPolinomio(POLINOMIO* pol) {
+  // Apenas olhar o valor do primeiro expoente
+  // pois o polinomio esta em ordem descrescente de expoente
   if(pol->cabeca->prox != pol->cabeca){
     return pol->cabeca->prox->expoente;
   }
@@ -245,15 +257,15 @@ int grauDoPolinomio(POLINOMIO* pol) {
 
 
 void imprimirPolinomio(POLINOMIO* pol) {
-  printf("%d", tamanhoDoPolinomio(pol));
+  fprintf(saida, "%d", tamanhoDoPolinomio(pol));
   TERMO* termo = pol->cabeca->prox;
 
   while(termo != pol->cabeca){
-    printf(" %.lf %d", termo->coeficiente, termo->expoente);
+    fprintf(saida, " %.lf %d", termo->coeficiente, termo->expoente);
     termo = termo->prox;
   }
 
-  printf("\n");
+  fprintf(saida, "\n");
   return;
 }
 
@@ -266,20 +278,20 @@ void imprimirPolinomioFormatado(POLINOMIO* pol) {
     printVariavel = termo->expoente;
     printCoeficiente = termo->coeficiente && (termo->coeficiente != 1 || !printVariavel);
 
-    if(printCoeficiente) printf("%.2lf", (double)abs(termo->coeficiente));
+    if(printCoeficiente) fprintf(saida, "%.2lf", (double)abs(termo->coeficiente));
     if(printVariavel) {
-      if(termo->expoente > 1) printf("x^%d", termo->expoente);
-      else printf("x");
+      if(termo->expoente > 1) fprintf(saida, "x^%d", termo->expoente);
+      else fprintf(saida, "x");
     }
 
     termo = termo->prox;
     if(termo->coeficiente != 0) {
       char sinal = termo->coeficiente > 0 ? '+' : '-';
-      printf("%c", sinal);
+      fprintf(saida, "%c", sinal);
     }
   }
 
-  printf("\n");
+  fprintf(saida, "\n");
   return;
 }
 
@@ -290,11 +302,11 @@ void imprimirPolinomioFormatado(POLINOMIO* pol) {
 void lerEInserirNoPolinomio(POLINOMIO* pol) {
   int numTermos;
 
-  scanf("%d", &numTermos);
+  fscanf(entrada, "%d", &numTermos);
 
   for(int j = 0; j < numTermos; j++) {
     double coeficiente; int expoente;
-    scanf("%lf %d", &coeficiente, &expoente);
+    fscanf(entrada, "%lf %d", &coeficiente, &expoente);
     inserirTermo(pol, coeficiente, expoente);
   }
 }
@@ -303,16 +315,29 @@ void lerEInserirNoPolinomio(POLINOMIO* pol) {
 /*---------- MAIN ----------*/
 
 
-int main() {
+int main( int argc, char *argv[ ] ) {
+
+  // Leitura dos arquivos de entrada e saida
+
+  if(argc >= 2) {
+    entrada = fopen(argv[1], "r");
+  }
+  if(argc >= 3) {
+    saida = fopen(argv[2], "w");
+  }
+
+
+
   int cases;
-  scanf("%d", &cases);
+  fscanf(entrada, "%d", &cases);
+  fprintf(saida, "%d\n", cases);
 
   POLINOMIO* polinomio1 = NULL;
   POLINOMIO* polinomio2 = NULL;
   POLINOMIO* resultado = NULL;
 
   for(int i = 0; i < cases; i++) {
-    scanf("%d", &operacao);
+    fscanf(entrada, "%d", &operacao);
     polinomio1 = (POLINOMIO*) malloc(sizeof(POLINOMIO));
 
     inicializarPolinomio(polinomio1);
@@ -326,7 +351,7 @@ int main() {
         lerEInserirNoPolinomio(polinomio2);
 
         resultado = somar(polinomio1, polinomio2);
-        printf("%d\n", operacao);
+        fprintf(saida, "%d\n", operacao);
         imprimirPolinomio(resultado);
         break;
       case Subtracao:
@@ -335,7 +360,7 @@ int main() {
         lerEInserirNoPolinomio(polinomio2);
 
         resultado = subtrair(polinomio1, polinomio2);
-        printf("%d\n", operacao);
+        fprintf(saida, "%d\n", operacao);
         imprimirPolinomio(resultado);
         break;
       case Multiplicacao:
@@ -344,35 +369,35 @@ int main() {
         lerEInserirNoPolinomio(polinomio2);
 
         resultado = multiplicar(polinomio1, polinomio2);
-        printf("%d\n", operacao);
+        fprintf(saida, "%d\n", operacao);
         imprimirPolinomio(resultado);
         break;
       case Derivada:
         resultado = derivar(polinomio1);
-        printf("%d\n", operacao);
+        fprintf(saida, "%d\n", operacao);
         imprimirPolinomio(resultado);
         break;
       case Raiz:
         double raiz;
-        scanf("%lf", &raiz);
+        fscanf(entrada, "%lf", &raiz);
 
-        printf("%d\n", operacao);
-        printf("%d\n", verificarRaiz(polinomio1, raiz));
+        fprintf(saida, "%d\n", operacao);
+        fprintf(saida, "%d\n", verificarRaiz(polinomio1, raiz));
         break;
       case Resolucao:
         double* raizes = calcularRaiz(polinomio1);
 
-        printf("%d\n", operacao);
-        printf("%.2lf %.2lf\n", raizes[0], raizes[1]);
+        fprintf(saida, "%d\n", operacao);
+        fprintf(saida, "%.2lf %.2lf\n", raizes[0], raizes[1]);
         free(raizes);
         break;
       case Impressao:
-        printf("%d\n", operacao);
+        fprintf(saida, "%d\n", operacao);
         imprimirPolinomioFormatado(polinomio1);
         break;
       case Grau:
-        printf("%d\n", operacao);
-        printf("%d\n", grauDoPolinomio(polinomio1));
+        fprintf(saida, "%d\n", operacao);
+        fprintf(saida, "%d\n", grauDoPolinomio(polinomio1));
         break;
     }
 
@@ -389,6 +414,9 @@ int main() {
       resultado = NULL;
     }
   }
+
+  fclose(entrada);
+  fclose(saida);
 
   return 0;
 }
