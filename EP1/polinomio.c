@@ -261,7 +261,7 @@ void imprimirPolinomio(POLINOMIO* pol) {
   TERMO* termo = pol->cabeca->prox;
 
   while(termo != pol->cabeca){
-    fprintf(saida, " %.lf %d", termo->coeficiente, termo->expoente);
+    fprintf(saida, " %.2lf %d", termo->coeficiente, termo->expoente);
     termo = termo->prox;
   }
 

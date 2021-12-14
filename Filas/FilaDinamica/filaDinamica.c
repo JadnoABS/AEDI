@@ -21,8 +21,11 @@ void inserirNaFila(FILA* fila, TIPOCHAVE ch) {
   NO* elem = (NO*) malloc(sizeof(NO));
 
   elem->chave = ch;
-  elem->prox = fila->inicio;
-  fila->inicio = elem;
+  elem->prox = NULL;
+  if(fila->fim) fila->fim->prox = elem;
+  else fila->inicio = elem;
+
+  fila->fim = elem;
 
   return;
 }
