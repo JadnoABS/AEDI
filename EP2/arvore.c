@@ -1,8 +1,17 @@
+/**************************************************************/
+/* Aluno: Jadno Augusto Barbosa da Silva
+/* Número USP: 12608618
+/* Disciplina/Ano/EP: ACH2023/2021/EP2
+/**************************************************************/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 typedef int TIPOCHAVE;
+typedef enum { esq, dir } LADO;
 
 enum operacoes {Criar = 1, Inserir, Excluir, CalcBal, VerificarAVL} operacao;
 
@@ -98,7 +107,7 @@ NO* rotacaoEsqDir(NO* p) {
 }
 
 
-NO* inserirElemento(NO* raiz, TIPOCHAVE chave, bool* ajustar) {
+NO* inserirAVL(NO* raiz, TIPOCHAVE chave, bool* ajustar) {
 
   if(!raiz){
     raiz = (NO*) malloc(sizeof(NO));
@@ -109,7 +118,7 @@ NO* inserirElemento(NO* raiz, TIPOCHAVE chave, bool* ajustar) {
     *ajustar = true;
   } else {
     if(chave < raiz->chave){
-      raiz->esq = inserirElemento(raiz->esq, chave, ajustar);
+      raiz->esq = inserirAVL(raiz->esq, chave, ajustar);
       if(*ajustar){
         switch(raiz->bal){
           case 1:
@@ -131,7 +140,7 @@ NO* inserirElemento(NO* raiz, TIPOCHAVE chave, bool* ajustar) {
       }
 
     } else {
-      raiz->dir = inserirElemento(raiz->dir, chave, ajustar);
+      raiz->dir = inserirAVL(raiz->dir, chave, ajustar);
 
       if(*ajustar){
         switch(raiz->bal){
@@ -156,6 +165,145 @@ NO* inserirElemento(NO* raiz, TIPOCHAVE chave, bool* ajustar) {
   }
 
   return raiz;
+}
+
+
+NO* maiorFilho(NO* raiz, LADO lado, NO* *pai) {
+  if(lado == esq){
+    if(raiz->esq){
+      *pai = raiz;
+      return maiorFilho(raiz->esq, dir, pai);
+    }
+    else return raiz;
+  }
+  if(lado == dir){
+    if(raiz->dir){
+      *pai = raiz;
+      return maiorFilho(raiz->dir, dir, pai);
+    }
+    else return raiz;
+  }
+}
+
+NO* menorFilho(NO* raiz, LADO lado, NO* *pai) {
+  if(lado == esq){
+    if(raiz->esq){
+      *pai = raiz;
+      return menorFilho(raiz->esq, esq, pai);
+    }
+    else return raiz;
+  }
+  if(lado == dir){
+    if(raiz->dir){
+      *pai = raiz;
+      return menorFilho(raiz->dir, esq, pai);
+    }
+    else return raiz;
+  }
+}
+
+NO* remocaoAVL(NO* raiz, TIPOCHAVE chave, bool* ajustar) {
+
+  if(raiz->chave == chave){
+
+    if(!raiz->dir || !raiz->esq){
+      if(!raiz->dir && raiz->esq){
+        NO* q = raiz->esq;
+        free(raiz);
+        *ajustar = true;
+        return q;
+      } else if(raiz->dir && !raiz->esq){
+        NO* q = raiz->dir;
+        free(raiz);
+        *ajustar = true;
+        return q;
+      } else {
+        free(raiz);
+        *ajustar = true;
+        return NULL;
+      }
+    }
+
+    NO* p;
+    NO* q = maiorFilho(raiz, esq, &p);
+
+    if(p == raiz){
+      q->dir = raiz->dir;
+      free(raiz);
+      return q;
+    }
+
+    q->dir = raiz->dir;
+    p->dir = q->esq;
+    q->esq = raiz->esq;
+    free(raiz);
+    return q;
+
+  } else if(chave < raiz->chave){
+    raiz->esq = remocaoAVL(raiz->esq, chave, ajustar);
+    if(*ajustar){
+      switch(raiz->bal){
+        case 1:
+          if(raiz->dir->bal == 1){
+            raiz = rotacaoEsquerda(raiz);
+          } else {
+            raiz = rotacaoDirEsq(raiz);
+          }
+          *ajustar = false;
+          break;
+        case 0:
+          raiz->bal = 1;
+          *ajustar = false;
+          break;
+        case -1:
+          raiz->bal = 0;
+          break;
+      }
+    }
+
+  } else {
+    raiz->dir = remocaoAVL(raiz->dir, chave, ajustar);
+    if(*ajustar){
+      switch(raiz->bal){
+        case -1:
+          if(raiz->esq->bal == -1){
+            raiz = rotacaoDireita(raiz);
+          } else {
+            raiz = rotacaoEsqDir(raiz);
+          }
+          *ajustar = false;
+          break;
+        case 0:
+          raiz->bal = -1;
+          *ajustar = false;
+          break;
+        case 1:
+          raiz->bal = 0;
+          break;
+      }
+    }
+  }
+
+  return raiz;
+}
+
+
+
+bool ehAVL(NO* raiz) {
+
+  if(raiz->bal <= 1 && raiz->bal >= -1) {
+
+    if(raiz->dir) {
+      if(!ehAVL(raiz->dir)) return false;
+    }
+    if(raiz->esq) {
+      if(!ehAVL(raiz->esq)) return false;
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 
@@ -239,7 +387,7 @@ void imprimirArvoreTeste(NO* raiz) {
 }
 
 
-/* -------------- APAGAR ESSA PARTE DEPOIS!!! ----------------*/
+/* -----------------------------------------------------------*/
 
 
 
@@ -250,6 +398,66 @@ void excluirAVL(NO* raiz) {
   free(raiz);
 }
 
+
+NO* lerArvore(NO* raiz, bool* folha, int* altura) {
+
+  // char parentese = getchar();
+  char parentese = getc(entrada);
+  // printf("%c ", parentese);
+  if(parentese == ')') {
+    *altura = 0;
+    *folha = true; return NULL;
+  };
+  char a = getc(entrada);
+  if(a == ')') return NULL;
+
+  fseek(entrada, -sizeof(char), SEEK_CUR);
+
+  int chave;
+  fscanf(entrada, "%d", &chave);
+  // printf("%d\n", chave);
+  // scanf("%d", &chave);
+  // printf("%c %d\n", parentese, chave);
+
+  if(chave > 21000) {
+    getc(entrada);
+    // getchar();
+    *folha = false;
+    return NULL;
+  };
+
+  raiz = (NO*) malloc(sizeof(NO));
+  raiz->chave = chave;
+  raiz->bal = 0;
+
+  int alturaEsq = 0; int alturaDir = 0;
+
+  raiz->esq = lerArvore(raiz->esq, folha, altura);
+  if(raiz->esq){
+    (*altura)++;
+    raiz->bal -= *altura;
+    alturaEsq = *altura;
+  }
+  if(!(*folha)){
+    raiz->dir = lerArvore(raiz->dir, folha, altura);
+    if(raiz->dir){
+      (*altura)++;
+      raiz->bal += *altura;
+      alturaDir = *altura;
+    }
+    getc(entrada);
+    // getchar();
+  } else { raiz->dir = NULL; }
+
+  // printf("%d\n", raiz->bal);
+
+  if(alturaEsq >= alturaDir) *altura = alturaEsq;
+  else *altura = alturaDir;
+
+  *folha = false;
+  return raiz;
+
+}
 
 
 int main(int argc, char *argv[]) {
@@ -263,42 +471,110 @@ int main(int argc, char *argv[]) {
 
   int cases;
   fscanf(entrada, "%d", &cases);
-  printf("%d\n", cases);
+  fprintf(saida, "%d\n", cases);
+  // printf("%d\n", cases);
 
   for(int i = 0; i < cases; i++){
     fscanf(entrada, "%d", &operacao);
-    printf("%d\n", operacao);
+    fprintf(saida, "%d\n", operacao);
+    // printf("%d\n", operacao);
+    NO* raiz;
+    int chave;
+    bool folha;
+    bool ajustar;
+    int altura;
 
     switch(operacao){
       case Criar:
-        NO* raiz;
         inicializarAVL(&raiz);
 
-        int chave; char aux;
+        char aux;
         do {
           fscanf(entrada, "%d%c", &chave, &aux);
-          bool ajustar = false;
-          raiz = inserirElemento(raiz, chave, &ajustar);
+          ajustar = false;
+          raiz = inserirAVL(raiz, chave, &ajustar);
           imprimirArvoreTeste(raiz);
           printf("\n");
         } while(aux != '\n');
 
-        imprimirArvoreTeste(raiz);
+        // imprimirArvoreTeste(raiz);
         imprimirAVL(raiz);
+        fprintf(saida, "\n");
 
-        if(raiz) excluirAVL(raiz);
         break;
       case Inserir:
+        fscanf(entrada, "%d", &chave);
+        getc(entrada);
+        // scanf("%d", &ch);
+        // getchar();
+
+        folha = false;
+        altura = 0;
+        raiz = lerArvore(raiz, &folha, &altura);
+
+        // imprimirAVL(raiz);
+        // fprintf(saida, "\n");
+
+        ajustar = false;
+        raiz = inserirAVL(raiz, chave, &ajustar);
+
+        // imprimirArvoreTeste(raiz);
+        imprimirAVL(raiz);
+        fprintf(saida, "\n");
+
         break;
       case Excluir:
+
+        fscanf(entrada, "%d", &chave);
+        getc(entrada);
+        // scanf("%d", &ch);
+        // getchar();
+
+        folha = false;
+        altura = 0;
+        raiz = lerArvore(raiz, &folha, &altura);
+
+        // imprimirAVL(raiz);
+        // fprintf(saida, "\n");
+
+        ajustar = false;
+        raiz = remocaoAVL(raiz, chave, &ajustar);
+
+        // imprimirArvoreTeste(raiz);
+        imprimirAVL(raiz);
+        fprintf(saida, "\n");
+
         break;
       case CalcBal:
+
+        fscanf(entrada, "%d", &chave);
+        getc(entrada);
+        
+        folha = false;
+        altura = 0;
+        raiz = lerArvore(raiz, &folha, &altura);
+
+        NO* elem = raiz;
+        while(elem->chave != chave){
+          elem = chave > elem->chave ? elem->dir : elem->esq;
+        }
+        fprintf(saida, "%d\n", elem->bal);
+
         break;
       case VerificarAVL:
+        getc(entrada);
+        
+        folha = false;
+        altura = 0;
+        raiz = lerArvore(raiz, &folha, &altura);
+
+        if(ehAVL(raiz)) fprintf(saida, "T\n");
+        else fprintf(saida, "F\n");
+
         break;
     }
     
-
+    if(raiz) excluirAVL(raiz);
   }
 
 }
